@@ -21,8 +21,8 @@ RSS: false
 # weibo_username:     qiubaiying
 zhihu_username:     wushiqian
 github_username:    wushiqian
-facebook_username:  
-jianshu_username:  
+Instagram_username:  wushiqianqian
+jianshu_username:  wushiqian
 
 
 
@@ -49,6 +49,7 @@ gems: [jekyll-paginate]
 # document: http://jekyllrb.com/docs/configuration/#kramdown
 markdown: kramdown
 highlighter: rouge
+gems: [jekyll-paginate]
 kramdown:
   input: GFM                            # use Github Flavored Markdown !important
 
