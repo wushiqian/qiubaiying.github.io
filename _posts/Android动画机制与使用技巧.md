@@ -1,0 +1,308 @@
+---
+layout:     post
+title:      Android动画机制与使用技巧
+subtitle:   《Android群英传》第七章读书笔记
+date:       2018-10-06
+author:     wushiqian
+header-img: img/background-cover.jpg
+catalog: true
+tags:
+    - Android
+---
+
+# Android动画机制与使用技巧
+
+《Android群英传》第七章读书笔记
+
+## View动画 （视图动画）
+
+视图动画(Animation)框架定义了透明度(AlphaAnimation)、旋转(RotateAnimation)、缩放(ScaleAnimation)和位移(TranslateAnimation)几种常见的动画，控制的是View的内容，所以视图动画的缺陷就在于当某个元素发生视图动画后，其响应事件的位置还依然停留在原来的地方！
+
+**实现原理是每次绘制视图时View所在的ViewGroup中的drawChild方法获取该View的Animation的Transformation值，然后调用canvas.concat(transformationToApply.getMatrix())，通过矩阵运算完成动画帧。如果动画没有完成，就继续调用invalidate方法，启动下次绘制来驱动动画，从而完成整个动画的绘制。**
+
+动画集合(AnimationSet)：将多个视图动画组合起来
+动画监听器(AnimationListener)：提供动画的监听回调方法
+
+## 属性动画
+
+Android 3.0之后添加了属性动画(Animator)框架，其中核心类ObjectAnimator能够自动驱动，在不影响动画效果的情况下减少CPU资源消耗。
+
+**ObjectAnimator**
+
+创建ObjectAnimator只需通过它的静态工厂方法直接返回一个ObjectAnimator对象，参数包括view对象，以及view的属性名字，这个属性必须要有get/set方法，因为ObjectAnimator内部会通过反射机制来修改属性值。<br>
+常用的可以直接使用属性动画的属性包括：<br>
+(1)translationX和translationY：控制view从它布局容器左上角坐标偏移的位置；<br>
+(2)rotation、rotationX和rotationY：控制view围绕支点进行2D和3D旋转；<br>
+(3)scaleX和scaleY：控制view围绕着它的支点进行2D缩放；<br>
+(4)pivotX和pivotY：控制支点位置，围绕这个支点进行旋转和缩放处理。默认情况下，支点是view的中心点；<br>
+(5)x和y：控制view在它的容器中的最终位置，它是最初的左上角坐标和translationX、translationY的累计和；<br>
+(6)alpha：控制透明度，默认是1（不透明）。<br>
+
+ObjectAnimator的常见使用方式如下：
+
+```
+ObjectAnimator animator = ObjectAnimator.ofFloat(view,"translationX", 300);
+animator.setDuration(1000);
+animator.start();
+```
+
+**属性动画集合AnimatorSet**：控制多个动画的协同工作方式，常用方法animatorSet.play().with().before().after()、playTogether、playSequentially等方法来精确控制动画播放顺序。使用PropertyValueHolder也可以实现简单的动画集合效果。
+
+**动画监听器**：监听动画事件可以使用AnimatorListener或者简易的适配器AnimatorListenerAdapter
+
+如果一个属性没有get/set方法怎么办？<br>
+(1)自定义包装类，间接地给属性提供get/set方法，下面就是一个包装类的例子，为width属性提供了get/set方法
+
+```
+public class WrapperView {
+
+    private View mView;
+
+    public WrapperView(View mView){
+        this.mView = mView;
+    }
+
+    public int getWidth(){
+        return mView.getLayoutParams().width;
+    }
+
+    public void setWidth(int width){
+        mView.getLayoutParams().width = width;
+        mView.requestLayout();
+    }
+}
+```
+
+(2)使用ValueAnimator<br>
+ObjectAnimator就是继承自ValueAnimator的，它是属性动画的核心，ValueAnimator不提供任何动画效果，它就是一个数值产生器，用来产生具有一定规律的数字，从而让调用者来控制动画的实现过程，控制的方式是使用AnimatorUpdateListener来监听数值的变换。
+
+```
+ValueAnimator animator = ValueAnimator.ofFloat(0,100);
+animator.setTarget(view);
+animator.setDuration(1000);
+animator.start();
+animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+    @Override
+    public void onAnimationUpdate(ValueAnimator animation) {
+        Float value = (Float) animation.getAnimatedValue();
+        //do the animation!
+    }
+});
+```
+
+### 在XML中使用属性动画
+
+```
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="4000"
+    android:propertyName="rotation"
+    android:valueFrom="0"
+    android:valueTo="360" />
+```
+
+在代码中使用方式如下：
+
+```
+Animator animator = AnimatorInflater.loadAnimator(this, R.animator.animator_rotation);
+animator.setTarget(view);
+animator.start();
+```    
+
+### View的animate方法
+
+Android 3.0之后View新增了animate方法直接驱动属性动画，它其实是属性动画的一种简写方式
+
+```
+imageView.animate().alpha(0).y(100).setDuration(1000)
+        .setListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+            }
+        });
+```
+
+## 布局动画
+
+布局动画是作用在ViewGroup上的，给ViewGroup添加view时添加动画过渡效果。<br>
+(1)简易方式（但是没有什么效果）：在xml中添加如下属性android:animateLayoutChanges="true<br>
+(2)通过LayoutAnimationController来自定义子view的过渡效果，下面是一个常见的使用例子：
+
+```
+LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll);
+ScaleAnimation scaleAnimation = new ScaleAnimation(0,1,0,1);
+scaleAnimation.setDuration(2000);
+LayoutAnimationController controller = new LayoutAnimationController(scaleAnimation, 0.5f);
+controller.setOrder(LayoutAnimationController.ORDER_NORMAL);//NORMAL 顺序 RANDOM 随机 REVERSE 反序
+linearLayout.setLayoutAnimation(controller);
+```
+
+## 自定义动画
+
+创建自定义动画就是要实现它的applyTransformation的逻辑，不过通常还需要覆盖父类的initialize方法来实现初始化工作。 下面是一个模拟电视机关闭的动画
+
+```
+public class CustomTV extends Animation {
+
+    private int mCenterWidth;
+    private int mCenterHeight;
+
+    @Override
+    public void initialize(int width, int height, int parentWidth, int parentHeight) {
+        super.initialize(width, height, parentWidth, parentHeight);
+        setDuration(1000);// 设置默认时长
+        setFillAfter(true);// 动画结束后保留状态
+        setInterpolator(new AccelerateInterpolator());// 设置默认插值器
+        mCenterWidth = width / 2;
+        mCenterHeight = height / 2;
+    }
+
+    @Override
+    protected void applyTransformation(float interpolatedTime, Transformation t) {
+        final Matrix matrix = t.getMatrix();
+        matrix.preScale(1, 1 - interpolatedTime, mCenterWidth, mCenterHeight);
+    }
+}
+```
+
+applyTransformation方法的第一个参数interpolatedTime是插值器的时间因子，取值在0到1之间；第二个参数Transformation是矩阵的封装类，一般使用它来获得当前的矩阵Matrix对象，然后对矩阵进行操作，就可以实现动画效果了
+
+### 实现3D动画效果
+
+使用android.graphics.Camera中的Camera类，它封装了OpenGL的3D动画。可以把Camera想象成一个真实的摄像机，当物体固定在某处时，只要移动摄像机就能拍摄到具有立体感的图像，因此通过它可以实现各种3D效果。<br>
+下面是一个3D动画效果的例子
+
+```
+public class CustomAnim extends Animation {
+
+    private int mCenterWidth;
+    private int mCenterHeight;
+    private Camera mCamera = new Camera();
+    private float mRotateY = 0.0f;
+
+    @Override
+    public void initialize(int width, int height, int parentWidth, int parentHeight) {
+        super.initialize(width, height, parentWidth, parentHeight);
+        setDuration(2000);// 设置默认时长
+        setFillAfter(true);// 动画结束后保留状态
+        setInterpolator(new BounceInterpolator());// 设置默认插值器
+        mCenterWidth = width / 2;
+        mCenterHeight = height / 2;
+    }
+
+    // 暴露接口-设置旋转角度
+    public void setRotateY(float rotateY) {
+        mRotateY = rotateY;
+    }
+
+    @Override
+    protected void applyTransformation( float interpolatedTime, Transformation t) {
+        final Matrix matrix = t.getMatrix();
+        mCamera.save();
+        mCamera.rotateY(mRotateY * interpolatedTime);// 使用Camera设置旋转的角度
+        mCamera.getMatrix(matrix);// 将旋转变换作用到matrix上
+        mCamera.restore();
+        // 通过pre方法设置矩阵作用前的偏移量来改变旋转中心
+        matrix.preTranslate(mCenterWidth, mCenterHeight);
+        matrix.postTranslate(-mCenterWidth, -mCenterHeight);
+    }
+}
+```
+
+## SVG矢量动画机制
+
+SVG是什么：
+
+* 可伸缩矢量图形(Scalable Vector Graphics)
+* 定义用于网络的基于矢量的图形
+* 使用xml格式定义图形
+* 图像在放大或者改变尺寸的情况下其图形质量不会有损失
+* 万维网联盟的标准
+* 与诸如DOM和XSL之类的W3C标准是一个整体
+
+<path>标签：
+使用<path>标签创建SVG，就像用指令的方式来控制一只画笔。标签所支持的指令有以下几种：
+
+* M=moveto(M X,Y)：将画笔移动到指定的坐标位置，但未发生绘制。
+* L=lineto(L X,Y)：画直线到指定的坐标位置。
+* H=horizontal lineto(H X)：画水平线到指定的X坐标位置。
+* V=vertical lineto(V Y)：画水平线到指定的Y坐标位置。
+* C=curveto(C X1,Y1,X2,Y2,ENDX,ENDY)：三次贝塞尔曲线。
+* S=smooth curveto(S X2,Y2,ENDX,ENDY)：三次贝塞尔曲线。
+* Q=quadratic Belzier curve(Q X,Y,ENDX,ENDY)：二次贝塞尔曲线。
+* T=smooth quadratic Belzier curveto(T ENDX,ENDY)：映射前面路径后的终点。
+* A=elliptical Arc(A RX,RY,XROTATION,FLAG1,FLAG2,X,Y)：弧形。RX、RY为半轴大小，XROTATION指椭圆的X轴水平方向顺时针方向夹角，FLAG1为1时表示大角度弧形，为0表小角度，FLAG2为1时表顺时针，0位逆时针，X、Y为终点坐标
+* Z=closepath()：关闭路径。
+
+
+注意：
+① 坐标轴以(0,0)为中心，X轴水平向右，Y轴水平向下。
+② 所有指令大小写均可。大写绝对定位，参照全局坐标系；小写相对定位，参照父容器坐标系。
+③ 指令和数据间的空格可以省略。
+④ 同一指令出现多次可以只用一个。
+
+SVG编辑器：
+书中介绍了个Inkscape，有兴趣的可以尝试下。
+
+Android中使用SVG：
+谷歌在Android 5.X中提供了VectorDrawable、AnimatedVectorDrawable来帮助支出SVG。
+
+VectorDrawable：
+
+```
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"//控制SVG图形的具体大小，height与width的比例需和viewportHeight与viewportWidth的相同，不然会变形
+    android:viewportHeight="100"
+    android:viewportWidth="100">//图形划分的比例，这里指划分100*100，绘制图形使用坐标（50,50）即为中心点
+    <group
+        android:name="test"
+        android:rotation="0">
+        <path
+            android:fillColor="@android:color/holo_blue_light"
+            android:pathData="M 25 50    
+                a 25 25 0 1 1 50 0"       
+            />
+    </group>
+</vector>
+```
+
+AnimatedVectorDrawable：
+
+```
+AnimatedVectorDrawable就是给VectorDrawable提供动画效果，通过它来连接静态的VectorDrawable和动态的objectAnimator。
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/vector_demo">
+    <target
+        android:animation="@anim/anim"
+        android:name="test"/>//这里的name需要和vectordrawable里的name一样
+</animated-vector>
+```
+动画代码如下：
+
+```
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+        android:duration="3000"
+        android:propertyName="rotation"//path中的属性
+        android:valueFrom="0"
+        android:valueTo="360">
+</objectAnimator>
+```
+
+具体使用如下：
+
+```
+((Animatable)imageView.getDrawable()).start();
+```
+
+
