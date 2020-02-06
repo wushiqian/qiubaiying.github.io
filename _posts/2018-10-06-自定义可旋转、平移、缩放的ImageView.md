@@ -135,7 +135,7 @@ public boolean onTouchEvent(MotionEvent event) {
 
 ```
 private void translate(PointF midPoint) {
-    /* 分别计算在x轴与y轴上需要平移的距离*/
+    // 分别计算在x轴与y轴上需要平移的距离
     float dx = midPoint.x - mLastMidPoint.x;
     float dy = midPoint.y - mLastMidPoint.y;
     mMatrix.postTranslate(dx, dy);
@@ -167,7 +167,7 @@ private PointF getMidPointOfFinger(MotionEvent event) {
 以当前两指间距离与上次触摸事件的两指间距离之比作为图片的缩放比例
 
 ```
-/**
+	/**
      * 获取图片的缩放中心，mScaleBy可在外部设置，或通过xml文件设置
      * 默认中心点为图片中心
      * @return 图片的缩放中心点
@@ -328,7 +328,7 @@ private float getCurrentRotateDegree() {
 最大缩放比例可通过外部设置，最小缩放比例即为适应控件大小时的缩放比例
 
 ```
-/**
+	/**
      * 检查图片缩放比例是否超过设置的大小
      */
     private void checkScale() {
@@ -386,7 +386,7 @@ private float getCurrentRotateDegree() {
 ![customImageView和mImageRect使用不同坐标系](https://upload-images.jianshu.io/upload_images/2704468-7b30b9192e0ed2e7.png?imageMogr2/auto-orient/)
 
 ```
-/**
+	/**
      * 将图片移回控件中心
      */
     private void checkBorder() {

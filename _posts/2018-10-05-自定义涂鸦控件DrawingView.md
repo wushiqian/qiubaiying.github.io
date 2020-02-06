@@ -23,7 +23,7 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
 ### 核心代码
 
 ```
-@Override
+	@Override
     public boolean onTouchEvent(MotionEvent event) {
         // 多个模式，检测当前模式可否绘画
         if (!mDrawMode) {
@@ -108,7 +108,7 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
 记录画笔和路径，注意如果你是直接保存mPaint和mPath的话，每次手指下落的时候都要新建这两个对象，不然会导致路径列表里所有路径都是一样的，因为他们保存的对象最终指向同样的内容。
 
-这里我做了一点小改变。不保存mPaint，只保存了mPaint的两个属性，这样就不用每次new Paint()了。
+这里做了一点小改变。不保存mPaint，只保存了mPaint的两个属性，这样就不用每次new Paint()了。
 
 ```
         switch (event.getAction()) {
@@ -124,7 +124,7 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             case MotionEvent.ACTION_UP:
                 mPath.lineTo(mX, mY);
                 mCanvas.drawPath(mPath, mPaint);
-            	// 保存 path和paint的两个属性
+            	// 保存path和paint的两个属性
                 savePath.add(new DrawPath(mPath, mPaint.getColor(), mPaint.getStrokeWidth()));
                 mPath = null;
                 break;
