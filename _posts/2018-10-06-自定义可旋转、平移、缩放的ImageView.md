@@ -47,21 +47,21 @@ ACTION_CANCEL     |当我们手指还在屏幕上时，但是却因为某种原�
 
 ## 基本思路
 
-由于是要自定义一个对图片进行操作的View，所以既可以使用View作为父类，也可以使用ImageView作为父类，由于ImageView提供了很多图片处理相关方法，还有各种图片加载库支持直接load图片进入ImageView，也不用自己处理View的测量布局绘制，可以少做很多事情，所以这里选择继承ImageView
+由于是要自定义一个对图片进行操作的View，所以既可以使用View作为父类，也可以使用ImageView作为父类，由于ImageView提供了很多图片处理相关方法，还有各种图片加载库支持直接load图片进入ImageView，也不用自己处理View的测量布局绘制，可以少做很多事情，所以这里选择继承ImageView。
 
-接着就是判断当前的手势是否符合预先设置的旋转、平移、缩放手势，此处可以使用ScaleGestureDetector、GestureDetector两个系统提供的手势帮助类，也可以选则自己在onTouchEvent()方法中对触摸事件进行判断。这里我是在onTouchEvent()方法中对触摸事件进行判断。
+接着就是判断当前的手势是否符合预先设置的旋转、平移、缩放手势，此处可以使用**ScaleGestureDetector**、**GestureDetector**两个系统提供的手势帮助类，也可以选则自己在onTouchEvent()方法中对触摸事件进行判断。这里我是在onTouchEvent()方法中对触摸事件进行判断。
 
-获取到用户的手势后即可对图片进行操作，ImageView有提供方法setImageMatrix()非常方便，所以此处选择使用Matrix直接对图片进行操作
+获取到用户的手势后即可对图片进行操作，ImageView有提供方法setImageMatrix()非常方便，所以此处选择使用Matrix直接对图片进行操作。
 
 ### 获取触摸事件
 
 这边因为需要在控件的长按事件与点击事件做一些操作，在onTouch中进行判断直接返回true的话会导致这两个事件无法触发，所以选择在onTouchEvent()中对触摸事件进行判断
 
-方法中主要是判断当前触摸的手指数为2的时候可以缩放、旋转，为1的时候可以平移，手指全部抬起后进行回弹操作，然后对一些成员变量进行维护，不用太关注具体变量什么意思，等下会和其他具体的手势判断方法在下文一起进行介绍
+方法中主要是判断当前触摸的手指数为2的时候可以缩放、旋转，为1的时候可以平移，手指全部抬起后进行回弹操作。
 
 此处需要注意具体缩放、平移、旋转方法中只改变mMatrix的值，而将mMatrix应用到图片上只在onTouchEvent()或者动画中进行
 
-```
+```java
 @Override
 public boolean onTouchEvent(MotionEvent event) {
     // 获取所有触点的中点
@@ -133,7 +133,7 @@ public boolean onTouchEvent(MotionEvent event) {
 ### 平移
 直接计算当前触摸事件所有触点的中点与上次触摸事件中点的距离
 
-```
+```java
 private void translate(PointF midPoint) {
     // 分别计算在x轴与y轴上需要平移的距离
     float dx = midPoint.x - mLastMidPoint.x;
@@ -166,7 +166,7 @@ private PointF getMidPointOfFinger(MotionEvent event) {
 
 以当前两指间距离与上次触摸事件的两指间距离之比作为图片的缩放比例
 
-```
+```java
 	/**
      * 获取图片的缩放中心，mScaleBy可在外部设置，或通过xml文件设置
      * 默认中心点为图片中心
@@ -229,7 +229,7 @@ private PointF getMidPointOfFinger(MotionEvent event) {
 
 ![旋转角度](https://upload-images.jianshu.io/upload_images/2704468-cd3222dcff573417.png?imageMogr2/auto-orient/)
 
-```
+```java
 private void rotate(MotionEvent event) {
         // 计算当前两指触点所表示的向量
         mCurrentVector.set(event.getX(1) - event.getX(0),
@@ -275,7 +275,7 @@ private void rotate(MotionEvent event) {
 
 此处还有个坑，原本我是使用一个float类型的全局变量mDegree保存当前图片已转过的角度，但是回弹的时候会因为计算过程中浮点数的精度损失而导致图片不能完全转回去，和控件之间还是有一点微小的夹角，于是之后改为即时计算当前图片转过的角度的方式就不会再出现这个问题了
 
-```
+```java
 /**
  * 根据当前图片旋转的角度，判断是否回弹
  */
@@ -327,7 +327,7 @@ private float getCurrentRotateDegree() {
 
 最大缩放比例可通过外部设置，最小缩放比例即为适应控件大小时的缩放比例
 
-```
+```java
 	/**
      * 检查图片缩放比例是否超过设置的大小
      */
@@ -385,7 +385,7 @@ private float getCurrentRotateDegree() {
 
 ![customImageView和mImageRect使用不同坐标系](https://upload-images.jianshu.io/upload_images/2704468-7b30b9192e0ed2e7.png?imageMogr2/auto-orient/)
 
-```
+```java
 	/**
      * 将图片移回控件中心
      */
@@ -426,7 +426,7 @@ private float getCurrentRotateDegree() {
 
 设置好初始状态的矩阵和最终状态的矩阵，就可以根据动画当前执行的进度对矩阵的值进行更新，简单粗暴
 
-```@Override
+```java
 public void onAnimationUpdate(ValueAnimator animation) {
     /*mFromMatrixValue为初始矩阵， mToMatrixValue为最终矩阵，mInterpolateMatrixValue为保存动画过程中中间值的矩阵*/
     if (mFromMatrixValue != null
@@ -446,7 +446,7 @@ public void onAnimationUpdate(ValueAnimator animation) {
 
 ## 辅助方法
 
-```
+```java
 /**
  * 更新图片所在区域，并将矩阵应用到图片
  */

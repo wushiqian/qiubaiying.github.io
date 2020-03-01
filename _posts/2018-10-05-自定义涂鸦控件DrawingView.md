@@ -22,8 +22,8 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
 
 ### 核心代码
 
-```
-	@Override
+```java
+	  @Override
     public boolean onTouchEvent(MotionEvent event) {
         // 多个模式，检测当前模式可否绘画
         if (!mDrawMode) {
@@ -31,6 +31,7 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
         }
         float x;
         float y;
+      // 若已缩放，则除以比例尺
         if (mProportion != 0) {
             x = (event.getX()) / mProportion;
             y = event.getY() / mProportion;
@@ -53,6 +54,7 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
                 mCanvas.drawPath(mPath, mPaint);
                 break;
             case MotionEvent.ACTION_MOVE:
+            // 移动时绘画
                 float dx = Math.abs(x - mX);
                 float dy = Math.abs(y - mY);
                 if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
@@ -65,6 +67,7 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
             case MotionEvent.ACTION_UP:
                 mPath.lineTo(mX, mY);
                 mCanvas.drawPath(mPath, mPaint);
+            // 保存绘画的路径，以便撤回
                 mLastDrawPath = new DrawPath(mPath, mPaint.getColor(), mPaint.getStrokeWidth());
                 savePath.add(mLastDrawPath);
                 mPath = null;
@@ -78,16 +81,17 @@ android上的一个涂鸦控件。可以设置画笔的粗细，颜色，撤销�
 ```
 
 ### 控件适应图片
-因为这个我们需要这个控件居中显示，而且canvas必须和加载的图片一样大（否则可以涂鸦的范围和图片大小不一样）所以在绘制这个控件的时候要测量图片大小。
+因为我们需要这个控件居中显示，而且canvas必须和加载的图片一样大（否则可以涂鸦的范围和图片大小不一样）所以在绘制这个控件的时候要测量图片大小。
 
 重写onMeasure()方法
 
-```
+```java
 @Override
 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+				super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int widthSize = getMeasureWidth(widthMeasureSpec);
         int heightSize = getMeasureHeight(heightMeasureSpec);
+  			// 修改控件的大小
         if (mBitmap != null) {
             if ((mBitmap.getHeight() > heightSize) && (mBitmap.getHeight() > mBitmap.getWidth())) {
                 widthSize = heightSize * mBitmap.getWidth() / mBitmap.getHeight();
@@ -110,7 +114,7 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
 这里做了一点小改变。不保存mPaint，只保存了mPaint的两个属性，这样就不用每次new Paint()了。
 
-```
+```java
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
             	// 手指下落 新建Path对象
@@ -131,8 +135,8 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             default:
                 break;
         }
-```        
 ```
+```java
     /**
      * 撤销上一步
      */
@@ -154,16 +158,16 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             invalidate();
         }
     }
-```    
+```
 
 ### 清空画布
-```
+```java
     /**
      * 清空画布
      */
     public void clear() {
         Log.d(TAG, "clear the path");
-        if (savePath != null && savePath.size() > 0) {
+        if (savedPath != null && savedPath.size() > 0) {
             // 清空画布
             mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             loadImage(mOriginBitmap);
@@ -173,7 +177,9 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 ```
 ## 提供的接口
 
-```
+自定义控件的其它实现的功能
+
+```java
     mDrawingView = (DrawingView) findViewById(R.id.img_screenshot);
     mDrawingView.initializePen();// 初始化画笔
     mDrawingView.setPenSize(10);// 设置画笔大小
@@ -182,4 +188,5 @@ super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     mDrawingView.saveImage(sdcardPath, "DrawImg", Bitmap.CompressFormat.PNG, 100);//保存图片
     mDrawingView.undo();// 撤销上一步
     mDrawingView.getImageBitmap();// 返回控件上的bitmap，可用于保存文件
-```    
+```
+
